@@ -1,0 +1,43 @@
+  const featuredCreatorsHomeData = [
+    {
+      id: 1,
+      name: 'Luna Martinez',
+      category: 'Digital Art',
+      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=face',
+      cover: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=1200&h=600&fit=crop',
+      subscribers: '12.5K',
+      isVerified: true,
+      isLive: false,
+      gradient: 'from-purple-500 to-pink-500',
+      bgGradient: 'from-purple-500/10 to-pink-500/10',
+      borderGradient: 'from-purple-500/50 to-pink-500/50',
+    },
+    {
+      id: 2,
+      name: 'Alex Chen',
+      category: 'Fitness',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face',
+      cover: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&h=600&fit=crop',
+      subscribers: '8.3K',
+      isVerified: true,
+      isLive: true,
+      gradient: 'from-blue-500 to-cyan-500',
+      bgGradient: 'from-blue-500/10 to-cyan-500/10',
+      borderGradient: 'from-blue-500/50 to-cyan-500/50',
+    },
+    {
+      id: 3,
+      name: 'Sofia Rivera',
+      category: 'Music',
+      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face',
+      cover: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&h=600&fit=crop',
+      subscribers: '15.2K',
+      isVerified: true,
+      isLive: false,
+      gradient: 'from-emerald-500 to-green-500',
+      bgGradient: 'from-emerald-500/10 to-green-500/10',
+      borderGradient: 'from-emerald-500/50 to-green-500/50',
+    },
+  ];
+
+    export default featuredCreatorsHomeData;

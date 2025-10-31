@@ -1,0 +1,463 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id               String         @id @default(uuid())
+  email            String?        @unique
+  username         String         @unique
+  displayName      String?
+  passwordHash     String?
+  walletAddress    String?        @unique
+  role             UserRole       @default(USER)
+  bio              String?
+  avatarUrl        String?
+  coverImageUrl    String?
+  location         String?
+  website          String?
+  twitter          String?
+  instagram        String?
+  isVerified       Boolean        @default(false)
+  emailVerified    Boolean        @default(false)
+  emailVerifyToken String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  lastLoginAt      DateTime?
+  comments         Comment[]      @relation("UserComments")
+  creator          Creator?
+  likes            Like[]         @relation("UserLikes")
+  nonces           Nonce[]
+  notifications    Notification[]
+  paymentsSent     Payment[]      @relation("PayerPayments")
+  posts            Post[]
+  sessions         Session[]
+  subscriptions    Subscription[]
+  followers        Follow[]       @relation("Follower")
+  following        Follow[]       @relation("Following")
+
+  @@index([email])
+  @@index([walletAddress])
+  @@index([username])
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  token        String   @unique
+  refreshToken String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  ipAddress    String?
+  userAgent    String?
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("sessions")
+}
+
+model Nonce {
+  id        String   @id @default(uuid())
+  userId    String
+  nonce     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([nonce])
+  @@index([userId])
+  @@map("nonces")
+}
+
+model Creator {
+  id                  String         @id @default(uuid())
+  userId              String         @unique
+  walletAddress       String         @unique
+  username            String         @unique
+  displayName         String?
+  bio                 String?
+  avatarUrl           String?
+  coverUrl            String?
+  profileCID          String?
+  subscriptionPrice   Decimal        @default(0) @db.Decimal(20, 18)
+  subscriptionEnabled Boolean        @default(false)
+  onChainId           BigInt?
+  contractAddress     String?
+  isVerifiedOnChain   Boolean        @default(false)
+  totalEarnings       Decimal        @default(0) @db.Decimal(20, 18)
+  totalSubscribers    Int            @default(0)
+  totalContent        Int            @default(0)
+  subscriberCount     Int            @default(0)
+  reputation          Int            @default(0)
+  verified            Boolean        @default(false)
+  category            String?
+  description         String?
+  isActive            Boolean        @default(true)
+  isPremium           Boolean        @default(false)
+  verifiedAt          DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  content             Content[]
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentsReceived    Payment[]      @relation("CreatorPayments")
+  subscriptions       Subscription[]
+
+  @@index([walletAddress])
+  @@index([username])
+  @@index([userId])
+  @@map("creators")
+}
+
+model Subscription {
+  id              String              @id @default(uuid())
+  tokenId         Int                 @unique
+  subscriberId    String
+  creatorId       String
+  nftTokenId      BigInt?
+  contractAddress String?
+  transactionHash String
+  startDate       DateTime?
+  endDate         DateTime?
+  startTime       DateTime
+  endTime         DateTime
+  amount          String
+  price           Decimal?            @db.Decimal(20, 18)
+  isActive        Boolean             @default(true)
+  autoRenew       Boolean             @default(false)
+  cancelledAt     DateTime?
+  lastPaymentId   String?
+  nextBillingDate DateTime?
+  status          SubscriptionStatus? @default(ACTIVE)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  payments        Payment[]
+  creator         Creator             @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  subscriber      User                @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriberId, creatorId])
+  @@index([subscriberId])
+  @@index([creatorId])
+  @@index([nftTokenId])
+  @@map("subscriptions")
+}
+
+model Payment {
+  id                  String        @id @default(uuid())
+  blockchainPaymentId String?
+  payerId             String
+  creatorId           String
+  subscriptionId      String?
+  contentId           String?
+  amount              String
+  totalAmount         Decimal       @db.Decimal(20, 18)
+  creatorAmount       Decimal       @db.Decimal(20, 18)
+  platformFee         Decimal       @db.Decimal(20, 18)
+  transactionHash     String        @unique
+  blockNumber         BigInt?
+  contractAddress     String?
+  fromAddress         String?
+  toAddress           String?
+  paymentType         PaymentType
+  cryptocurrency      String        @default("ETH")
+  usdValue            Decimal?      @db.Decimal(20, 2)
+  exchangeRate        Decimal?      @db.Decimal(20, 8)
+  status              PaymentStatus @default(PENDING)
+  confirmedAt         DateTime?
+  failureReason       String?
+  metadata            Json?
+  message             String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  content             Content?      @relation("ContentPayments", fields: [contentId], references: [id])
+  creator             Creator       @relation("CreatorPayments", fields: [creatorId], references: [id])
+  payer               User          @relation("PayerPayments", fields: [payerId], references: [id])
+  subscription        Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@index([payerId])
+  @@index([creatorId])
+  @@index([transactionHash])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+model Content {
+  id             String       @id @default(uuid())
+  creatorId      String
+  title          String
+  description    String?
+  contentType    ContentType
+  ipfsCID        String
+  ipfsUrl        String?
+  thumbnailCID   String?
+  thumbnailUrl   String?
+  duration       Int?
+  fileSize       BigInt?
+  isPremium      Boolean      @default(false)
+  price          Decimal?     @db.Decimal(20, 18)
+  visibility     String       @default("PUBLIC")
+  enableComments Boolean      @default(true)
+  enableLikes    Boolean      @default(true)
+  viewCount      Int          @default(0)
+  likeCount      Int          @default(0)
+  commentCount   Int          @default(0)
+  isPublished    Boolean      @default(false)
+  publishedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  creator        Creator      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  tags           ContentTag[]
+  payments       Payment[]    @relation("ContentPayments")
+
+  @@index([creatorId])
+  @@index([contentType])
+  @@index([publishedAt])
+  @@index([isPremium])
+  @@map("content")
+}
+
+model ContentTag {
+  id        String  @id @default(uuid())
+  contentId String
+  tag       String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, tag])
+  @@index([tag])
+  @@map("content_tags")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model BlockchainEvent {
+  id              String    @id @default(uuid())
+  eventName       String
+  contractAddress String
+  transactionHash String
+  blockNumber     BigInt
+  logIndex        Int
+  eventData       Json
+  processed       Boolean   @default(false)
+  processedAt     DateTime?
+  error           String?
+  createdAt       DateTime  @default(now())
+
+  @@unique([transactionHash, logIndex])
+  @@index([eventName])
+  @@index([contractAddress])
+  @@index([processed])
+  @@index([blockNumber])
+  @@map("blockchain_events")
+}
+
+model Analytics {
+  id         String       @id @default(uuid())
+  type       AnalyticType
+  entityId   String
+  entityType String
+  metric     String
+  value      Float
+  date       DateTime
+  hour       Int?
+  createdAt  DateTime     @default(now())
+
+  @@index([entityId])
+  @@index([type])
+  @@index([date])
+  @@map("analytics")
+}
+
+model Post {
+  id            String         @id @default(uuid())
+  userId        String
+  title         String?
+  content       String
+  imageUrl      String?
+  videoUrl      String?
+  thumbnailUrl  String?
+  type          PostType       @default(TEXT)
+  community     String?
+  communityIcon String?
+  flair         String?
+  flairColor    String?
+  visibility    PostVisibility @default(PUBLIC)
+  isPPV         Boolean        @default(false)
+  priceUSD      Decimal?       @db.Decimal(10, 2)
+  upvotes       Int            @default(0)
+  downvotes     Int            @default(0)
+  comments      Int            @default(0)
+  shares        Int            @default(0)
+  views         Int            @default(0)
+  tags          String[]
+  pollOptions   Json?
+  isPinned      Boolean        @default(false)
+  isTrending    Boolean        @default(false)
+  isPublished   Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  publishedAt   DateTime       @default(now())
+  postComments  Comment[]
+  likes         Like[]
+  author        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([community])
+  @@index([type])
+  @@index([visibility])
+  @@index([createdAt])
+  @@index([isPinned])
+  @@index([isTrending])
+  @@map("posts")
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation("UserLikes", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+  @@map("likes")
+}
+
+model Comment {
+  id        String    @id @default(uuid())
+  postId    String
+  userId    String
+  content   String
+  imageUrl  String?
+  videoUrl  String?
+  parentId  String?
+  likes     Int       @default(0)
+  isEdited  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User      @relation("UserComments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+  @@index([parentId])
+  @@map("comments")
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String // User who is following
+  followingId String // User being followed
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@index([createdAt])
+  @@map("follows")
+}
+
+enum UserRole {
+  USER
+  CREATOR
+  ADMIN
+  MODERATOR
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PAUSED
+}
+
+enum PaymentType {
+  TIP
+  SUBSCRIPTION
+  CONTENT_PURCHASE
+  DONATION
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  CONFIRMED
+  COMPLETED
+  FAILED
+  REFUNDED
+  DISPUTED
+}
+
+enum ContentType {
+  IMAGE
+  VIDEO
+  AUDIO
+  TEXT
+  DOCUMENT
+}
+
+enum NotificationType {
+  NEW_SUBSCRIBER
+  NEW_TIP
+  NEW_COMMENT
+  NEW_LIKE
+  NEW_REPLY
+  NEW_FOLLOW
+  SUBSCRIPTION_RENEWED
+  SUBSCRIPTION_EXPIRED
+  PAYMENT_RECEIVED
+  SYSTEM_ALERT
+  CONTENT_PUBLISHED
+}
+
+enum AnalyticType {
+  VIEW
+  LIKE
+  SHARE
+  SUBSCRIPTION
+  REVENUE
+  ENGAGEMENT
+}
+
+enum PostType {
+  TEXT
+  IMAGE
+  VIDEO
+  POLL
+}
+
+enum PostVisibility {
+  PUBLIC
+  SUBSCRIBERS
+  PPV
+}

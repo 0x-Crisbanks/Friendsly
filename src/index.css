@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Scrollbar for Notifications Dropdown (Twitter/X Style) */
+.notifications-dropdown .max-h-\[500px\]::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notifications-dropdown .max-h-\[500px\]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notifications-dropdown .max-h-\[500px\]::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 3px;
+}
+
+.notifications-dropdown .max-h-\[500px\]::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
+/* Firefox */
+.notifications-dropdown .max-h-\[500px\] {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+}
